@@ -1,0 +1,2 @@
+fastapi
+git+https://github.com/guilopesrbc/ScanSheet-agent.git@v0.2.1
