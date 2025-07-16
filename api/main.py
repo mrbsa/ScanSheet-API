@@ -24,8 +24,11 @@ agent = ScanSheetAgent(api_key="api_key_xxxx", model="gpt-4")
 prompt_builder = PromptBuilder(templates_dir="templates")
 
 @app.post("/process-image")
-async def process_image(image_bytes: str = Form(...)):
+async def process_image(request: Request):
     try:
+        data = await request.json()
+        image_bytes = data.get("image_bytes")
+
         variables = {
             "image_url": image_bytes
         }
