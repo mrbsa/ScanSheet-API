@@ -1,7 +1,11 @@
 from io import BytesIO
 from PIL import Image
-from main import logger 
 import base64
+import logging
+
+# Configure server logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("encoder_utils")
 
 def merge_base64_images(image_list):  # vertically stacks images into a single one
     decoded_images = []

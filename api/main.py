@@ -10,7 +10,7 @@ import os
 import logging
 
 # Configure server logging
-logging.basicConfig(level=logging.info)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("scansheet_api")
 
 # Load environment variables
