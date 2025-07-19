@@ -1,5 +1,6 @@
 fastapi
-git+https://github.com/guilopesrbc/ScanSheet-agent.git@v1.1.0
+git+https://github.com/guilopesrbc/ScanSheet-agent.git@v1.1.1
 uvicorn
 langchain-community
 python-dotenv
+Pillow

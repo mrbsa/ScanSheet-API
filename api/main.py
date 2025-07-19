@@ -4,12 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from scansheet_agent.agent import ScanSheetAgent
 from scansheet_agent.prompt import PromptBuilder
 from dotenv import load_dotenv
-import base64
+from utils.encoder import merge_base64_images
 import os
 # import json
-# import logging
+import logging
 
-# logging.basicConfig(level=logging.info)
+# Configure server logging
+logging.basicConfig(level=logging.info)
+logger = logging.getLogger("scansheet_api")
 
 # Load environment variables
 load_dotenv()
@@ -50,9 +52,7 @@ async def process_image(request: Request):
 
         # Concatenate image(s)
         try:
-            decoded_list = [base64.b64decode(img) for img in image_list]  # decode images to bytes
-            joined_bytes = b"".join(decoded_list)  # join byte images into a single one
-            image_base64 = base64.b64encode(joined_bytes).decode('utf-8')  # re-encode single image as required by the library
+            image_base64 = merge_base64_images(image_list)
         except Exception:
             raise HTTPException(status_code=418, detail="Invalid image data.")
 
@@ -68,11 +68,17 @@ async def process_image(request: Request):
 
         # Run the agent
         response = agent.run(prompt=prompt)
-        print(response)
+
+        logger.info("Agent successfully responded.")
+        logger.info(str(response))
+
         return JSONResponse(content={"table": response})
 
     except HTTPException as e:
+        logger.info("ERROR: An exception has ocurred.")
         return JSONResponse(content={"error": e.detail}, status_code=e.status_code)
 
     except Exception as e:
+        logger.info("ERROR: Agent error.")
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
