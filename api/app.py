@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from scansheet_agent.agent import ScanSheetAgent
 from scansheet_agent.prompt import PromptBuilder
 from dotenv import load_dotenv
-from utils.encoder import base64_image_to_pdf
+# from utils.encoder import base64_image_to_pdf
 from PIL import Image
 import os
 # import json
@@ -60,15 +60,16 @@ async def process_image(request: Request):
 
         res = ""
 
-        for i, img in enumerate(image_list):
-            try:  # Convert images to pdf (base64 encoded)
-                pdf_base64 = image_to_pdf(img)  #  PDF? JPEG?
+        for i, img_base64 in enumerate(image_list):
+            try:  
+                pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
             except Exception:
                 raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
 
             variables = {
-                "image_base64": pdf_base64,
-                "title": f"{title}_page_{i + 1}"
+                "image_base64": img_base64,
+                "pdf_base64": pdf_base64,
+                "title": title
             }
 
             # Build the prompt
@@ -76,7 +77,7 @@ async def process_image(request: Request):
 
             # Run the agent
             response = agent.run(prompt=prompt)
-            res += response + "\n"  # join agent responses into a single one WRONG: NOT A JSON
+            res += response + ", \n" 
 
         logger.info("Agent successfully responded for all images.")
         return JSONResponse(content={"table": res.strip()})
