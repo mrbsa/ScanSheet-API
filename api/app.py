@@ -29,11 +29,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_key = os.getenv("API_KEY")
-if not api_key:
-    raise RuntimeError("API_KEY is missing. Check your .env file.")
+gpt_api_key = os.getenv("GPT_API_KEY")
+if not gpt_api_key:
+    raise RuntimeError("API_KEY for chat-gpt is missing. Check your .env file.")
 
-agent = ScanSheetAgent(api_key=api_key, model="gpt-4.1")
+mistral_api_key = os.getenv("MISTRAL_API_KEY")
+if not gpt_api_key:
+    raise RuntimeError("API_KEY for mistral is missing. Check your .env file.")
+
+agent = ScanSheetAgent(
+    chat_gpt_model="gpt-4.1", 
+    chat_gpt_api_key=gpt_api_key,
+    mistral_api_key=mistral_api_key
+)
 prompt_builder = PromptBuilder()
 
 def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a pdf in base64 
