@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from scansheet_agent.agent import ScanSheetAgent
@@ -19,15 +19,9 @@ logger = logging.getLogger("scansheet_api")
 # Load environment variables
 load_dotenv()
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+auth_secret = os.getenv("AUTH_TOKEN")
+if not auth_secret:
+    raise RuntimeError("No authorization token was found.")
 
 gpt_api_key = os.getenv("GPT_API_KEY")
 if not gpt_api_key:
@@ -36,6 +30,17 @@ if not gpt_api_key:
 mistral_api_key = os.getenv("MISTRAL_API_KEY")
 if not gpt_api_key:
     raise RuntimeError("API_KEY for mistral is missing. Check your .env file.")
+
+app = FastAPI()
+
+# Enable Cross-Origin Resource Sharing
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 agent = ScanSheetAgent(
     chat_gpt_model="gpt-4.1", 
@@ -54,8 +59,12 @@ def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a p
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to convert image to pdf.")
 
+
 @app.post("/process-image")
-async def process_image(request: Request):
+async def process_image(request: Request, authorization: str = Header(...)):
+    if authorization != auth_secret:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
     try:
         data = await request.json()
         
