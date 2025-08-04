@@ -48,7 +48,7 @@ agent = ScanSheetAgent(
     chat_gpt_api_key=gpt_api_key,
     mistral_api_key=mistral_api_key
 )
-prompt_builder = PromptBuilder()
+# prompt_builder = PromptBuilder()
 
 def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a pdf in base64 
     try:
@@ -96,10 +96,10 @@ async def process_image(request: Request, authorization: str = Header(...)):
             }
 
             # Build the prompt
-            prompt = prompt_builder.create_prompt(variables=variables)
+            #prompt = prompt_builder.create_prompt(variables=variables)
 
             # Run the agent
-            response = agent.run(prompt=prompt)
+            response = agent.run(variables=variables)
             res += response + ", \n" 
 
         logger.info("Agent successfully responded for all images.")
