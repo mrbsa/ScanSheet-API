@@ -61,14 +61,14 @@ def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a p
         raise HTTPException(status_code=500, detail="Failed to convert image to pdf.")
 
 
-class LogOriginMiddleware(BaseHTTPMiddleware):  ##
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin")
-        logger.info(f" Origem da requisição: {origin}")
-        response = await call_next(request)
-        return response
+# class LogOriginMiddleware(BaseHTTPMiddleware):  ##
+#     async def dispatch(self, request: Request, call_next):
+#         origin = request.headers.get("origin")
+#         logger.info(f" Origem da requisição: {origin}")
+#         response = await call_next(request)
+#         return response
 
-app.add_middleware(LogOriginMiddleware)  ##
+# app.add_middleware(LogOriginMiddleware)  ##
 
 @app.post("/process-image")
 async def process_image(request: Request, authorization: str = Header(...)):
@@ -76,6 +76,9 @@ async def process_image(request: Request, authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     try:
+        origin = request.headers.get("origin")
+        logger.info(f" Origem da requisição: {origin}")
+    
         data = await request.json()
         
         # Input fields
