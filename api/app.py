@@ -72,10 +72,12 @@ def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a p
 
 @app.post("/process-image")
 async def process_image(request: Request, authorization: str = Header(...)):
+    logger.info("Check origin credentials.")
     if authorization != auth_secret:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     try:
+        logger.info("Start image processing.")
         origin = request.headers.get("origin")
         logger.info(f" Origem da requisição: {origin}")
     
