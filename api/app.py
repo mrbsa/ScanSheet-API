@@ -1,17 +1,12 @@
 from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from scansheet_agent.agent import ScanSheetAgent
-from scansheet_agent.prompt import PromptBuilder
-from starlette.middleware.base import BaseHTTPMiddleware ##
+from utils.encryption import decrypt
+from utils.pdf_generator import image_to_pdf
 from dotenv import load_dotenv
-# from utils.encoder import base64_image_to_pdf
-from PIL import Image
-import os
-# import json
 import logging
-import base64
-import io
+import os
 
 # Configure server logging
 logging.basicConfig(level=logging.INFO)
@@ -20,16 +15,20 @@ logger = logging.getLogger("scansheet_api")
 # Load environment variables
 load_dotenv()
 
-auth_secret = os.getenv("AUTH_TOKEN")
+auth_secret = os.getenv("AUTH_TOKEN")  # requester credentials
 if not auth_secret:
     raise RuntimeError("No authorization token was found.")
 
-gpt_api_key = os.getenv("GPT_API_KEY")
+symm_key = os.getenv("SYMMETRIC_KEY")  # payload crytographic decodification
+if not symm_key:
+    raise RuntimeError("No symmetric cryptography key was found.")
+
+gpt_api_key = os.getenv("GPT_API_KEY")  # pre-paid gpt-api key
 if not gpt_api_key:
     raise RuntimeError("API_KEY for chat-gpt is missing. Check your .env file.")
 
-mistral_api_key = os.getenv("MISTRAL_API_KEY")
-if not gpt_api_key:
+mistral_api_key = os.getenv("MISTRAL_API_KEY")  # mistral-api key
+if not mistral_api_key:
     raise RuntimeError("API_KEY for mistral is missing. Check your .env file.")
 
 app = FastAPI()
@@ -48,31 +47,26 @@ agent = ScanSheetAgent(
     chat_gpt_api_key=gpt_api_key,
     mistral_api_key=mistral_api_key
 )
-# prompt_builder = PromptBuilder()
-
-def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a pdf in base64 
-    try:
-        image_data = base64.b64decode(base64_img)
-        image = Image.open(io.BytesIO(image_data)).convert("RGB")
-        pdf_bytes = io.BytesIO()
-        image.save(pdf_bytes, format="PDF")
-        return base64.b64encode(pdf_bytes.getvalue()).decode("utf-8")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to convert image to pdf.")
 
 
 @app.post("/process-image")
 async def process_image(request: Request, authorization: str = Header(...)):
     logger.info("Check requester credentials.")
     if authorization != auth_secret:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise HTTPException(status_code=401, detail="Unauthorized.")
     
     try:
         logger.info("Start image processing.")
         origin = request.headers.get("origin")  # will be None if requester uses iOS native features (current)
-        logger.info(f"Requisition origin: {origin}")
+        logger.info(f"Requisition origin: {origin}.")
     
-        data = await request.json()
+        encrypted_data = await request.json()
+        try:
+            data = decrypt(encrypted_data.get("payload"), symm_key)
+        except HTTPException as e:
+            raise e
+        except Exception:
+            raise HTTPException(status_code=418, detail=f"Data could not be decrypted.")
         
         # Input fields
         image_list = data.get("image_bytes", [])  # list of images in byte form
@@ -86,6 +80,8 @@ async def process_image(request: Request, authorization: str = Header(...)):
         for i, img_base64 in enumerate(image_list):
             try:  
                 pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
+            except HTTPException as e:
+                raise e
             except Exception:
                 raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
 
@@ -95,14 +91,12 @@ async def process_image(request: Request, authorization: str = Header(...)):
                 "title": title
             }
 
-            # Build the prompt
-            #prompt = prompt_builder.create_prompt(variables=variables)
-
             # Run the agent
             response = agent.run(variables=variables)
             res += response + ", \n" 
 
-        logger.info("Agent successfully responded for all images.")
+        logger.info("Agent successfully responded to all images.")
+        logger.info(res)
         return JSONResponse(content={"table": res.strip()})
 
     except HTTPException as e:

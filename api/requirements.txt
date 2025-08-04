@@ -1,6 +1,7 @@
+cryptography
 fastapi
 git+https://github.com/guilopesrbc/ScanSheet-agent.git@v1.2.0
-uvicorn
 langchain-community
 python-dotenv
 Pillow
+uvicorn
