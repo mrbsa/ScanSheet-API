@@ -37,7 +37,7 @@ app = FastAPI()
 # Enable Cross-Origin Resource Sharing
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[],  # whitelist origin(s) if front-end is published in the web (currently iOS only)
     allow_credentials=True,
     allow_methods=["POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -61,25 +61,16 @@ def image_to_pdf(base64_img: str) -> str:  # converts an image in base 64 to a p
         raise HTTPException(status_code=500, detail="Failed to convert image to pdf.")
 
 
-# class LogOriginMiddleware(BaseHTTPMiddleware):  ##
-#     async def dispatch(self, request: Request, call_next):
-#         origin = request.headers.get("origin")
-#         logger.info(f" Origem da requisição: {origin}")
-#         response = await call_next(request)
-#         return response
-
-# app.add_middleware(LogOriginMiddleware)  ##
-
 @app.post("/process-image")
 async def process_image(request: Request, authorization: str = Header(...)):
-    logger.info("Check origin credentials.")
+    logger.info("Check requester credentials.")
     if authorization != auth_secret:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     try:
         logger.info("Start image processing.")
-        origin = request.headers.get("origin")
-        logger.info(f" Origem da requisição: {origin}")
+        origin = request.headers.get("origin")  # will be None if requester uses iOS native features (current)
+        logger.info(f"Requisition origin: {origin}")
     
         data = await request.json()
         
