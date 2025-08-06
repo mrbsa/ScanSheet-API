@@ -75,7 +75,7 @@ async def process_image(request: Request, authorization: str = Header(...)):
         if not image_list or not isinstance(image_list, list):
             raise HTTPException(status_code=400, detail="'image_bytes' must be a list of base64-encoded strings.")
 
-        res = ""
+        table = []
 
         for i, img_base64 in enumerate(image_list):
             try:  
@@ -93,11 +93,16 @@ async def process_image(request: Request, authorization: str = Header(...)):
 
             # Run the agent
             response = agent.run(variables=variables)
-            res += response + ", \n" 
+            table.append({
+                "title": title,
+                "content": response
+            })
+
+            logger.info(str(response))
 
         logger.info("Agent successfully responded to all images.")
-        logger.info(res)
-        return JSONResponse(content={"table": res.strip()})
+        logger.info(str(table))
+        return JSONResponse(content={"table": table})
 
     except HTTPException as e:
         logger.info("ERROR: An exception has occurred.")
