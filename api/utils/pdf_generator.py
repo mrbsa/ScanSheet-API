@@ -1,4 +1,4 @@
-from fastapi.responses import HTTPException
+from fastapi import HTTPException
 from PIL import Image
 import logging
 import base64
