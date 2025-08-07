@@ -93,7 +93,7 @@ async def process_image(request: Request, authorization: str = Header(...)):
 
             # Run the agent
             response = agent.run(variables=variables)
-            table.append({ response })
+            table.append(response)
 
             logger.info(str(response))
 
