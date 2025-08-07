@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from scansheet_agent.agent import ScanSheetAgent
-from utils.encryption import decrypt
+from utils.encryption import encrypt, decrypt
 from utils.pdf_generator import image_to_pdf
 from dotenv import load_dotenv
 import logging
@@ -93,16 +93,15 @@ async def process_image(request: Request, authorization: str = Header(...)):
 
             # Run the agent
             response = agent.run(variables=variables)
-            table.append({
-                "title": title,
-                "content": response
-            })
+            table.append({ response })
 
             logger.info(str(response))
 
+        encrypted_table = encrypt(table, symm_key)
         logger.info("Agent successfully responded to all images.")
         logger.info(str(table))
-        return JSONResponse(content={"table": table})
+
+        return JSONResponse(content={"table": encrypted_table})
 
     except HTTPException as e:
         logger.info("ERROR: An exception has occurred.")
