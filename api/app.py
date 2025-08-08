@@ -56,7 +56,6 @@ async def process_image(request: Request, authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Unauthorized.")
     
     try:
-        logger.info("Start image processing.")
         origin = request.headers.get("origin")  # will be None if requester uses iOS native features (current)
         logger.info(f"Requisition origin: {origin}.")
     
@@ -64,8 +63,10 @@ async def process_image(request: Request, authorization: str = Header(...)):
         try:
             data = decrypt(encrypted_data.get("payload"), symm_key)
         except HTTPException as e:
+            logger.info('decrypt func error')
             raise e
         except Exception:
+            logger.info('decryption gone wrong')
             raise HTTPException(status_code=418, detail=f"Data could not be decrypted.")
         
         # Input fields
@@ -73,16 +74,21 @@ async def process_image(request: Request, authorization: str = Header(...)):
         title = data.get("title", "GenericForm")
 
         if not image_list or not isinstance(image_list, list):
+            logger.info('image_bytes error')
             raise HTTPException(status_code=400, detail="'image_bytes' must be a list of base64-encoded strings.")
 
         table = []
+        
+        logger.info("Start image processing.")
 
         for i, img_base64 in enumerate(image_list):
             try:  
                 pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
             except HTTPException as e:
+                logger.info(f'image {i} processing error')
                 raise e
             except Exception:
+                logger.info(f'image at {i} could not be processed')
                 raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
 
             variables = {
@@ -92,11 +98,15 @@ async def process_image(request: Request, authorization: str = Header(...)):
             }
 
             # Run the agent
-            response = agent.run(variables=variables)
+            try:
+                response = agent.run(variables=variables)
+            except Exception as e:
+                logger.info(str(e))
             table.append(response)
 
             logger.info(str(response))
 
+        logger.info(f'Number of images processed: {i}')
         encrypted_table = encrypt(table, symm_key)
         logger.info("Agent successfully responded to all images.")
         logger.info(str(table))
