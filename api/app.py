@@ -83,6 +83,7 @@ async def process_image(request: Request, authorization: str = Header(...)):
         logger.info("Start image processing.")
 
         if title == 'ficha_cadastro_individual':  # processes images as a single file (assuming they are pages of a same document)
+            logger.info('Form type: ficha_cadastro_individual')
             try:  
                 pdf_base64 = images_to_pdf(image_list)  #  convert images into paged pdf (base64 encoded)
                 img_base64 = merge_base64_images(image_list)  # merge images (pages) into a single one
