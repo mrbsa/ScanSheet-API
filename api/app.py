@@ -2,8 +2,9 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from scansheet_agent.agent import ScanSheetAgent
+from utils.pdf_generator import image_to_pdf, images_to_pdf
 from utils.encryption import encrypt, decrypt
-from utils.pdf_generator import image_to_pdf
+from utils.img_merger import merge_base64_images
 from dotenv import load_dotenv
 import logging
 import os
@@ -81,9 +82,10 @@ async def process_image(request: Request, authorization: str = Header(...)):
         
         logger.info("Start image processing.")
 
-        for i, img_base64 in enumerate(image_list):
+        if title == 'ficha_cadastro_individual':  # processes images as a single file (assuming they are pages of a same document)
             try:  
-                pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
+                pdf_base64 = images_to_pdf(image_list)  #  convert images into paged pdf (base64 encoded)
+                img_base64 = merge_base64_images(image_list)  # merge images (pages) into a single one
             except HTTPException as e:
                 logger.info(f'image {i} processing error')
                 raise e
@@ -106,7 +108,33 @@ async def process_image(request: Request, authorization: str = Header(...)):
 
             logger.info(str(response))
 
-        logger.info(f'Number of images processed: {i}')
+        else:  # processes images individually
+            for i, img_base64 in enumerate(image_list):
+                try:  
+                    pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
+                except HTTPException as e:
+                    logger.info(f'image {i} processing error')
+                    raise e
+                except Exception:
+                    logger.info(f'image at {i} could not be processed')
+                    raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
+
+                variables = {
+                    "image_base64": img_base64,
+                    "pdf_base64": pdf_base64,
+                    "title": title
+                }
+
+                # Run the agent
+                try:
+                    response = agent.run(variables=variables)
+                except Exception as e:
+                    logger.info(str(e))
+                table.append(response)
+
+                logger.info(str(response))
+
+        logger.info(f'Number of images processed: {i + 1}')
         encrypted_table = encrypt(table, symm_key)
         logger.info("Agent successfully responded to all images.")
         logger.info(str(table))
