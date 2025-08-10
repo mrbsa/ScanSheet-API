@@ -34,7 +34,7 @@ def merge_base64_images(image_list):  # vertically stacks images into a single o
         y_offset += img.height
 
     buffer = BytesIO()
-    merged_image.save(buffer, format='PNG')
+    merged_image.save(buffer, format='JPEG')
     merged_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')  # re-encode merged image
 
     return merged_base64  # returns a single base64 encoded image
