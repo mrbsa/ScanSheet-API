@@ -135,7 +135,7 @@ async def process_image(request: Request, authorization: str = Header(...)):
 
                 logger.info(str(response))
 
-        logger.info(f'Number of images processed: {i + 1}')
+        #logger.info(f'Number of images processed: {i + 1}')
         encrypted_table = encrypt(table, symm_key)
         logger.info("Agent successfully responded to all images.")
         logger.info(str(table))
