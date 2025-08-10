@@ -147,5 +147,5 @@ async def process_image(request: Request, authorization: str = Header(...)):
         return JSONResponse(content={"error": e.detail}, status_code=e.status_code)
 
     except Exception as e:
-        logger.info("ERROR: Agent error.")
+        logger.exception(f"ERROR: Agent error. {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
