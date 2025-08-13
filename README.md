@@ -101,3 +101,16 @@ The encrypted payload should contain:
 - All data is encrypted using AES-GCM encryption
 - API requests require authentication via an authorization header
 - Environment variables are used to store sensitive information
+
+## Tests
+
+You can run the unit tests as follows:
+
+Install the necessary dependencies in the root (.\ScanSheet-API\, not .\api\):
+```bash
+pip install -r .\api\requirements.txt
+```
+Run with coverage:
+```bash
+pytest --cov=api tests/ --cov-report=term-missing
+```
