@@ -1,6 +1,6 @@
 cryptography
 fastapi
-git+https://github.com/guilopesrbc/ScanSheet-agent.git@v1.2.0
+git+https://github.com/guilopesrbc/ScanSheet-agent.git@v1.2.1
 langchain-community
 python-dotenv
 Pillow
