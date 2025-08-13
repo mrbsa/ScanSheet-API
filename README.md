@@ -20,19 +20,20 @@ ScanSheet-API is a FastAPI-based backend service for processing scanned forms us
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ScanSheet-API.git
+   git clone https://github.com/mrbsa/ScanSheet-API.git
    cd ScanSheet-API
    ```
 
-2. Create a virtual environment:
+2. Create a virtual environment inside api folder:
    ```bash
-   python -m venv .venv
+   cd .\api\
+   python -m venv venv
    .venv\Scripts\activate
    ```
 
 3. Install dependencies:
    ```bash
-   pip install -r api\requirements.txt
+   pip install -r .\requirements.txt
    ```
 
 4. Create a `.env` file in the `api` directory with the following variables:
@@ -79,7 +80,7 @@ The encrypted payload should contain:
 ```json
 {
   "image_bytes": ["base64_encoded_image1", "base64_encoded_image2", ...],
-  "title": "form_type"
+  "title": form_type
 }
 ```
 
@@ -93,6 +94,7 @@ The encrypted payload should contain:
 ## Special Form Types
 
 - `ficha_cadastro_individual`: When this title is specified, the API processes all images as a single document, merging them together.
+- `outros`: This is the title for forms in general, which processes each image sent individually.
 
 ## Security
 
