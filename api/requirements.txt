@@ -5,3 +5,5 @@ langchain-community
 python-dotenv
 Pillow
 uvicorn
+pytest
+pytest-cov

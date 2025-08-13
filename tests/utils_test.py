@@ -1,10 +1,8 @@
 import base64
-import json
 import pytest
 from fastapi import HTTPException
 from PIL import Image
 import io
-import os
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from api.utils import encryption, img_merger, pdf_generator
 
