@@ -52,7 +52,7 @@ agent = ScanSheetAgent(
 
 @app.post("/process-image")
 async def process_image(request: Request, authorization: str = Header(...)):
-    logger.info("Check requester credentials.")
+    logger.info("Checking requester credentials.")
     if authorization != auth_secret:
         raise HTTPException(status_code=401, detail="Unauthorized.")
     
@@ -64,18 +64,15 @@ async def process_image(request: Request, authorization: str = Header(...)):
         try:
             data = decrypt(encrypted_data.get("payload"), symm_key)
         except HTTPException as e:
-            logger.info('decrypt func error')
             raise e
         except Exception:
-            logger.info('decryption gone wrong')
-            raise HTTPException(status_code=418, detail=f"Data could not be decrypted.")
+            raise HTTPException(status_code=422, detail=f"Data could not be decrypted.")
         
         # Input fields
         image_list = data.get("image_bytes", [])  # list of images in byte form
         title = data.get("title", "GenericForm")
 
         if not image_list or not isinstance(image_list, list):
-            logger.info('image_bytes error')
             raise HTTPException(status_code=400, detail="'image_bytes' must be a list of base64-encoded strings.")
 
         table = []
@@ -83,16 +80,15 @@ async def process_image(request: Request, authorization: str = Header(...)):
         logger.info("Start image processing.")
 
         if title == 'ficha_cadastro_individual':  # processes images as a single file (assuming they are pages of a same document)
-            logger.info('Form type: ficha_cadastro_individual')
             try:  
                 pdf_base64 = images_to_pdf(image_list)  #  convert images into paged pdf (base64 encoded)
                 img_base64 = merge_base64_images(image_list)  # merge images (pages) into a single one
             except HTTPException as e:
-                logger.info(f'image {i} processing error')
+                logger.exception(f'Image processing error: {e}')
                 raise e
             except Exception:
-                logger.info(f'image at {i} could not be processed')
-                raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
+                logger.exception(f'An image could not be processed')
+                raise HTTPException(status_code=500, detail=f"Invalid image data.")
 
             variables = {
                 "image_base64": img_base64,
@@ -104,21 +100,21 @@ async def process_image(request: Request, authorization: str = Header(...)):
             try:
                 response = agent.run(variables=variables)
             except Exception as e:
-                logger.info(str(e))
-            table.append(response)
+                logger.exception(str(e))
+                raise HTTPException(status_code=500, detail="Agent error.")
 
-            logger.info(str(response))
+            table.append(response)
 
         else:  # processes images individually
             for i, img_base64 in enumerate(image_list):
                 try:  
                     pdf_base64 = image_to_pdf(img_base64)  #  convert images to pdf (base64 encoded)
                 except HTTPException as e:
-                    logger.info(f'image {i} processing error')
+                    logger.exception(f'{str(e)}')
                     raise e
                 except Exception:
-                    logger.info(f'image at {i} could not be processed')
-                    raise HTTPException(status_code=418, detail=f"Invalid image data at index {i}.")
+                    logger.exception(f'{str(e)}')
+                    raise HTTPException(status_code=422, detail=f"Invalid image data at index {i}.")
 
                 variables = {
                     "image_base64": img_base64,
@@ -130,22 +126,20 @@ async def process_image(request: Request, authorization: str = Header(...)):
                 try:
                     response = agent.run(variables=variables)
                 except Exception as e:
-                    logger.info(str(e))
+                    logger.exception(str(e))
+                    raise HTTPException(status_code=500, detail="Agent error.")
+                
                 table.append(response)
 
-                logger.info(str(response))
-
-        #logger.info(f'Number of images processed: {i + 1}')
         encrypted_table = encrypt(table, symm_key)
         logger.info("Agent successfully responded to all images.")
-        logger.info(str(table))
 
         return JSONResponse(content={"table": encrypted_table})
 
     except HTTPException as e:
-        logger.info("ERROR: An exception has occurred.")
+        logger.exception("An exception has occurred.", exc_info=True)
         return JSONResponse(content={"error": e.detail}, status_code=e.status_code)
 
     except Exception as e:
-        logger.exception(f"ERROR: Agent error. {e}")
+        logger.exception(f"Agent error: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
